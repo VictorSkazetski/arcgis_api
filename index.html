@@ -1,0 +1,119 @@
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>GeoJSONLayer</title>
+
+    <style>
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 90%;
+        }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.22/esri/themes/light/main.css" />
+    <script src="https://js.arcgis.com/4.22/"></script>
+
+    <script>
+        $.get("http://localhost:3000/test", function(respData, status) {
+            let allCoordinate = respData.map(item => [item.x, item.y]);
+
+            require(["esri/Map", "esri/layers/GeoJSONLayer", "esri/views/MapView"], (
+                Map,
+                GeoJSONLayer,
+                MapView
+            ) => {
+                // If GeoJSON files are not on the same domain as your website, a CORS enabled server
+                // or a proxy is required.
+
+                const template = {
+                    title: "АЗС"
+                };
+
+                const renderer = {
+                    type: "simple",
+                    field: "mag",
+                    symbol: {
+                        type: "simple-marker",
+                        color: "orange",
+                        outline: {
+                            color: "white"
+                        }
+                    },
+                    visualVariables: [{
+                        type: "size",
+                        field: "mag",
+                        stops: [{
+                            value: 2.5,
+                            size: "4px"
+                        },
+                            {
+                                value: 8,
+                                size: "40px"
+                            }
+                        ]
+                    }]
+                };
+
+                const geojson = {
+                    type: "FeatureCollection",
+                    features: [
+                        {
+                            type: "Feature",
+                            id: 1,
+                            geometry: {
+                                type: "MultiPoint",
+                                coordinates:
+                                    allCoordinate
+                            },
+                            properties: {
+                                prop0: "value0",
+                            }
+                        }
+                    ]
+                };
+
+                const blob = new Blob([JSON.stringify(geojson)], {
+                    type: "application/json"
+                });
+
+
+                const geojsonLayer = new GeoJSONLayer({
+                    url: URL.createObjectURL(blob),
+                    copyright: "USGS Earthquakes",
+                    popupTemplate: template,
+                    renderer: renderer,
+                    orderBy: {
+                        field: "mag"
+                    }
+                });
+
+                const map = new Map({
+                    basemap: "gray-vector",
+                    layers: [geojsonLayer]
+                });
+
+                const view = new MapView({
+                    container: "viewDiv",
+                    center: [-120, 30],
+                    zoom: 1,
+                    map: map
+                });
+            });
+        });
+
+
+
+    </script>
+</head>
+
+<body>
+<div id="viewDiv"></div>
+</body>
+
+</html>
